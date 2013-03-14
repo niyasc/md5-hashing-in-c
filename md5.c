@@ -1,0 +1,199 @@
+#include<stdio.h>
+#include<stdint.h>
+#include<string.h>
+#include<stdbool.h>
+//per round shift
+const int r[64]={
+			7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+			5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+			4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+			6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21
+		};
+const uint32_t k[64]={
+			0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+			0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+			0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+			0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+			0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
+			0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+			0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
+			0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+			0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+			0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+			0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
+			0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+			0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
+			0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+			0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+			0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
+		};
+uint32_t h[4]={
+		0x67452301,
+		0xefcdab89,
+		0x98badcfe,
+		0x10325476
+		};
+uint32_t leftrotate(uint32_t ip,int ro)
+{
+	return (ip << ro) | (ip >> (32-ro));
+	/*bool bin[256];
+	int i;
+	for(i=0;i<256;i++)
+		bin[i]=0;
+	i--;
+	while(ip)
+	{
+		bin[i]=ip%2;
+		ip=ip/2;
+		i--;
+	}
+	bool buffer[10];
+	for(i=0;i<ro;i++)
+		buffer[i]=bin[i];
+	for(i=0;i<256-ro;i++)
+		bin[i]=bin[i+ro];
+	for(i=256-ro;r<256;i++)
+		bin[i]=buffer[i+ro-256];
+	uint32_t a=0;
+	for(i=0;i<256;i++)
+		a=a*2+bin[i];
+	return a;*/
+}
+int main(int argc,char *argv[])
+{
+	if(argc!=2)
+	{
+		printf("Syntax : <executable> <filename>\n");
+		return 1;
+	}
+	char message[1024];
+	bool message_bin[1024*8];
+	int i,j;
+	FILE *ptr=fopen(argv[1],"r");
+	if(ptr==NULL)
+	{
+		printf("Could not open input file\n");
+		return 1;
+	}
+	i=0;
+	while(!feof(ptr))
+	{
+		fscanf(ptr,"%c",&message[i++]);
+	}
+	message[--i]=0;
+	fclose(ptr);
+	for(i=0;message[i]!=0;i++)
+	{
+		int t=message[i];
+		for(j=i*8;j<(i+1)*8;j++)
+			message_bin[j]=0;
+		int k=(i+1)*8-1;
+		while(t)
+		{
+			message_bin[k]=t%2;
+			t=t/2;
+			k--;
+		}
+	}
+	
+	int len=strlen(message);
+	printf("Message before padding\n");
+	for(i=0;i<len*8;i++)
+	{
+		if(i&&!(i%64))
+			printf("\n");
+		else if(i&&!(i%8))
+			printf(" ");
+		printf("%d",message_bin[i]);
+	}
+	printf("\n");
+	//perform padding
+	if(len%64!=0)
+	{
+		message_bin[len*8]=1;
+		for(i=len*8+1;(512-i%512)>64;i++)
+			message_bin[i]=0;
+		int l=i;
+		int k=i+64;
+		while(l)
+		{
+			message_bin[k]=l%2;
+			l=l/2;
+			k--;
+		}
+	}
+	int lenbin=(len*8+(512-(len*8)%512));
+	/*printf("Message after padding\n");
+	for(i=0;i<lenbin;i++)
+	{
+		if(i&&!(i%64))
+			printf("\n");
+		else if(i&&!(i%8))
+			printf(" ");
+		printf("%d",message_bin[i]);
+	}*/
+	for(i=0;i<lenbin/512;i++)
+	{
+		bool chunk[512];
+		bool block[16][32];
+		for(j=i*512;j<(i+1)*512;j++)
+			chunk[j-i*512]=message_bin[j];
+		for(j=0;j<16;j++)
+		{
+			int k;
+			for(k=j*32;k<(j+1)*32;k++)
+			{
+				block[j][k-j*32]=chunk[k];
+			}
+		}
+			
+		uint32_t a=h[0];
+		uint32_t b=h[1];
+		uint32_t c=h[2];
+		uint32_t d=h[3];
+		uint32_t f,g;
+		for(j=0;j<64;j++)
+		{
+			if(j<16)
+			{
+				f=(b&c)|((!b)&d);
+				g=j;
+			}
+			else if(j<32)
+			{
+				f=(d&b)|((!d)&c);
+				g=(5*j+1)%16;
+			}			
+			else if(j<48)
+			{
+				uint32_t temp=(b&(!c))|((!b)&c);
+				f=temp&(!d)|(!temp)&d;
+				g=(3*j+5)%16;
+			}
+			else
+			{
+				uint32_t temp=b|(!d);
+				f=(c&(!temp))|(!c)&temp;
+				g=(7*j)%16;
+			}
+			int wg=0;
+			int m;
+			for(m=0;m<16;m++)
+			{
+				wg=wg*2+block[g][m];
+			}
+			uint32_t temp=d;
+			d=c;
+			c=b;
+			b=b+leftrotate((a+f+k[j]+wg),r[j]);
+			a=temp;
+			
+		}
+		h[0]+=a;
+		h[1]+=b;
+		h[2]+=c;
+		h[3]+=d;
+	}
+	printf("%x%x%x%x\n",h[0],h[1],h[2],h[3]);
+	return 0;
+}

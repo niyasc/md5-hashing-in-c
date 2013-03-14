@@ -1,0 +1,40 @@
+Binary length=1024
+h[0]=67452301
+h[1]=efcdab89
+h[2]=98badcfe
+h[3]=10325476
+a=67452301
+f=88888888
+g=0
+k[0]=d76aa478
+wg=6869
+a=10325476
+f=8c09a088
+g=1
+k[1]=e8c7b756
+wg=6120
+a=98badcfe
+f=8c01202c
+g=2
+k[2]=242070db
+wg=6d70
+Round 0
+9c0aeb282cd8feebbd42609f75dba631
+a=9c0aeb28
+f=2c40608b
+g=0
+k[0]=d76aa478
+wg=a5b
+a=75dba631
+f=4d0422a
+g=1
+k[1]=e8c7b756
+wg=0
+a=bd42609f
+f=1d04030
+g=2
+k[2]=242070db
+wg=0
+Round 1
+653dbdd5963fb43d3cef4dca6cc855c9
+653dbdd5963fb43d3cef4dca6cc855c9
